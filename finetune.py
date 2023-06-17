@@ -65,7 +65,7 @@ def train():
   wandb_on = True
   # Initializing with Wandb
   if wandb_on:
-    wandb.init(config = {'batch': 32,'num_authors':10}, group = '10 authors',settings=wandb.Settings(start_method="thread"))
+    wandb.init(config = {'batch': 32,'num_authors':10}, group = '10 authors_large',settings=wandb.Settings(start_method="thread"))
     config = wandb.config
     batch_size = config.batch
     learning_rate = config.learning_rate
