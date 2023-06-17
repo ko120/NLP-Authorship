@@ -65,7 +65,7 @@ def train():
   wandb_on = True
   # Initializing with Wandb
   if wandb_on:
-    wandb.init(settings = wandb.Settings(start_method="thread"))
+    wandb.init(config = {'batch': 32,'num_authors':10}, group = '10 authors',settings=wandb.Settings(start_method="thread"))
     config = wandb.config
     batch_size = config.batch
     learning_rate = config.learning_rate
@@ -179,9 +179,6 @@ if __name__ == '__main__':
   sweep_config['method'] = 'grid'
   sweep_config['metric'] = {'name': 'epoch acc', 'goal': 'maximize'}
   sweep_config['parameters'] = {'learning_rate': {'values' : [2e-5,3e-5,4e-5,5e-5,6e-5,7e-5,8e-5,9e-5]}, 'optimizer': {'values' : ['AdamW']}}
-  sweep_config['batch'] = 16
-  sweep_config['num_authors'] = 10
-  sweep_config['group'] = '10 Author from Large dataset'
 
 
   sweep_id = wandb.sweep(sweep_config, project = 'Authorship_NLP',)
