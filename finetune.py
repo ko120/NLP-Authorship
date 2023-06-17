@@ -133,7 +133,6 @@ def train():
       training_loss = []
       training_acc = []
       start_time = time.time()
-      print('statrt')
       model.train()
       for data in train_dataloader:
           input_ids = data['input_ids'].to(device)
