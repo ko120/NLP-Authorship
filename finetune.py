@@ -61,8 +61,12 @@ def train():
   os.environ["CUDA_VISIBLE_DEVICES"] = "2" # make use of only gpu 2 
   os.environ["CUDA_LAUNCH_BLOCKING"] = "1" # prevent using gpu 1
 
-  # For debugging purpose
-  wandb_on = True
+  # For debugging purpose 
+  if debug:
+    wandb_on = False
+  else:
+    wandb_on = True
+
   # Initializing with Wandb
   if wandb_on:
     wandb.init(config = {'batch': 32,'num_authors':10}, group = '10 authors_large',settings=wandb.Settings(start_method="thread"))
@@ -81,24 +85,20 @@ def train():
 
   # Read data from json file
   jsonl_files = {
-      'train': '/home/ko120/Authorship/data/10-raw-train.jsonl',
-      'test': '/home/ko120/Authorship/data/10-raw-test.jsonl'
+      'train': '/home/ko120/Authorship/NLP-Authorship/data/10-raw-train.jsonl',
+      'test': '/home/ko120/Authorship/NLP-Authorship/data/10-raw-test.jsonl'
   }
   data = load_dataset('json', data_files = jsonl_files )
-  
 
   # Split data
   #train_code, test_code, train_labels, test_labels = train_test_split(data_code, data_author, test_size=0.2, random_state=52)
 
   train_dataset = MultiClassClassificationDataset(data['train']['inputs'], data['train']['label'])
   test_dataset = MultiClassClassificationDataset(data['test']['inputs'], data['test']['label'])
-
+  
   # Load data
-  training_sampler = torch.utils.data.SequentialSampler(train_dataset)
-  test_sampler = torch.utils.data.SequentialSampler(test_dataset)
-
-  train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn, sampler=training_sampler, pin_memory= True, num_workers=0)
-  test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn, sampler=test_sampler, pin_memory= True, num_workers=0)
+  train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn, pin_memory= True, num_workers=0)
+  test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn, pin_memory= True, num_workers=0)
 
 
   # Build model
@@ -110,9 +110,8 @@ def train():
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model.to(device)
 
-  num_epochs = 500
-  print_interval = 100
-  validation_interval = 100
+  num_epochs = 300
+  print_interval = 50
 
   
   optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
@@ -138,6 +137,7 @@ def train():
           input_ids = data['input_ids'].to(device)
           attention_masks = data['attention_mask'].to(device)
           labels = torch.LongTensor(data['labels']).to(device)
+         
           try:
             optimizer.zero_grad()
             outputs = model(input_ids=input_ids, attention_mask=attention_masks)
@@ -174,12 +174,15 @@ def train():
       best_score = validation_step(model, test_dataloader, device, criterion, epoch, print_interval,wandb_on, best_score)
 
 if __name__ == '__main__':
-  sweep_config = dict()
-  sweep_config['method'] = 'grid'
-  sweep_config['metric'] = {'name': 'epoch acc', 'goal': 'maximize'}
-  sweep_config['parameters'] = {'learning_rate': {'values' : [2e-5,3e-5,4e-5,5e-5,6e-5,7e-5,8e-5,9e-5]}, 'optimizer': {'values' : ['AdamW']}}
+  debug = True
+  if not debug:
+    sweep_config = dict()
+    sweep_config['method'] = 'grid'
+    sweep_config['metric'] = {'name': 'epoch acc', 'goal': 'maximize'}
+    sweep_config['parameters'] = {'learning_rate': {'values' : [2e-5,3e-5,4e-5,5e-5,6e-5,7e-5,8e-5,9e-5]}, 'optimizer': {'values' : ['AdamW']}}
 
-
-  sweep_id = wandb.sweep(sweep_config, project = 'Authorship_NLP',)
-
-  wandb.agent(sweep_id, train)
+    sweep_id = wandb.sweep(sweep_config, project = 'Authorship_NLP',)
+    wandb.agent(sweep_id, train)
+  else:
+    train()
+  
